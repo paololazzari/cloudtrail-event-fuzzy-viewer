@@ -1,0 +1,116 @@
+#!/bin/bash
+VERSION="0.1.0"
+
+print_version()
+{
+  echo "cloudtrail-event-fuzzy-viewer version $VERSION"
+}
+
+print_options()
+{
+  echo "cloudtrail-event-fuzzy-viewer [version $VERSION]"
+  echo "Usage: "
+  echo "  -h, --help   : Display this message"
+  echo "  -v, --version: Display the version of cloudtrail-event-fuzzy-viewer"
+  echo "  -s, --start-time: Only events that occur after or at the start time are returned"
+  echo "  -e, --end-time: Only events that occur before or at the end time are returned"
+}
+
+_validate_prerequisites () {
+  # make sure jq is installed
+  which jq &> /dev/null
+  if [[ "$?" -ne 0 ]]; then
+    echo "jq is not installed"
+    exit 1
+  fi
+
+  # make sure aws cli is installed
+  which aws &> /dev/null
+  if [[ "$?" -ne 0 ]]; then
+    echo "aws cli is not installed"
+    exit 1
+  fi
+
+  # make sure fzf is installed
+  which fzf &> /dev/null
+  if [[ "$?" -ne 0 ]]; then
+    echo "fzf is not installed"
+    exit 1
+  fi
+}
+
+# parse command line arguments
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        -h|--help) print_options; exit 0 ;;
+        -v|--version) print_version; exit 0 ;;
+        -s|--start-time) start_time="$2"; shift ;; 
+        -e|--end-time) end_time="$2"; shift ;;
+    *) echo "Unknown parameter passed: $1" && exit 1;;
+    esac
+    shift
+done
+
+_validate_arguments() {
+  if [[ -z "$start_time" && -z "$end_time" ]]; then
+    echo "You must specify a start time and an end time"
+    exit 1
+  elif [ -z "$start_time" ] ; then
+    echo "You must specify a start time"
+    exit 1
+  elif [ -z "$end_time" ] ; then
+    echo "You must specify an end time"
+    exit 1
+  fi
+
+  if [[ ! $(date "+%Y-%m-%d %H:%M:%S" -d "$start_time") == "$start_time" ]] ; then
+    echo "Invalid start time provided"
+    exit 1
+  fi
+
+ if [[ ! $(date "+%Y-%m-%d %H:%M:%S" -d "$end_time") == "$end_time" ]] ; then
+    echo "Invalid end time provided"
+    exit 1
+ fi
+}
+
+_validate_aws_credentials() {
+  # make sure the credentials have enough permissions for the cloudtrail lookup events action
+  samplerequest_output=$(aws cloudtrail lookup-events --max-items 1)
+  samplerequest_exit_code=$?
+
+  if [[ "$samplerequest_exit_code" -ne 0 ]]; then
+    echo "You do not have sufficient permissions for the cloudtrail lookup-events action"
+    exit 1
+  fi
+}
+
+_validate_arguments
+_validate_prerequisites
+_validate_aws_credentials
+
+# export AWS_EXECUTION_ENV for custom user agent in requests (https://github.com/aws/aws-cli/issues/3990)
+export AWS_EXECUTION_ENV="cloudtrailfinder"
+
+echo "Looking up events..."
+
+aws cloudtrail lookup-events \
+  --start-time "${start_time}" \
+  --end-time "${end_time}" \
+  --query "Events[?"'!'"contains(CloudTrailEvent,'cloudtrailfinder')]" | jq -r '.[] | [(.CloudTrailEvent|fromjson).eventTime,.EventSource,.EventName,.EventId] | join (" ")' > /tmp/_out &
+
+wait
+
+events=$(</tmp/_out)
+if [ -z "$events" ] ; then
+  echo "No events were found."
+  exit 0
+fi
+
+readarray -t events < /tmp/_out
+
+printf "%s\n" "${events[@]}" | fzf --bind "del:clear-query" --bind 'enter:ignore' \
+  --with-nth 1..3 \
+  --preview-window cycle \
+  --preview-window="right:60%,border-rounded" \
+  --preview=$'l={}; id=$(echo "$l" | grep -Eo "[a-z0-9-]{28,}"); event=$(aws cloudtrail lookup-events --lookup-attributes AttributeKey=EventId,AttributeValue="$id" --query "Events[].CloudTrailEvent" --output text | jq "."); echo "$event" '
