@@ -18,13 +18,16 @@ jobs:
           pwd="${{ secrets.dockerhub }}"
           docker login -u="plazzari" -p="${pwd}"
 
+          # Get version
+          VERSION=$(awk -F '[="]' '/^VERSION/ {print $3}' cloudtrail-event-fuzzy-viewer)
+
           # Build docker images
-          docker build . --tag plazzari/cloudtrail-event-fuzzy-viewer:0.1.0
-          docker tag plazzari/cloudtrail-event-fuzzy-viewer:0.1.0 plazzari/cloudtrail-event-fuzzy-viewer:latest
+          docker build . --tag "plazzari/cloudtrail-event-fuzzy-viewer:${VERSION}"
+          docker tag "plazzari/cloudtrail-event-fuzzy-viewer:${VERSION}" plazzari/cloudtrail-event-fuzzy-viewer:latest
 
           # Deploy docker images
-          docker push plazzari/cloudtrail-event-fuzzy-viewer:0.1.0
+          docker push "plazzari/cloudtrail-event-fuzzy-viewer:${VERSION}"
           docker push plazzari/cloudtrail-event-fuzzy-viewer:latest
 
-          
+
 

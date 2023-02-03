@@ -8,13 +8,13 @@ cloudtrail-event-fuzzy-viewer is a cli tool that allows you to search for cloudt
 ## Usage
 
 ```bash
-cloudtrail-event-fuzzy-viewer --start-time "2023-01-30 00:00:00" --end-time "2023-02-03 00:00:00"
+cloudtrail-event-fuzzy-viewer --start-time "2023-01-30 00:00:00" --end-time "2023-02-03 00:00:00" --region us-east-1
 ```
 
 or, using docker:
 
 ```bash
-docker run --rm -it -v ~/.aws:/root/.aws:ro plazzari/cloudtrail-event-fuzzy-viewer:latest --start-time "2023-01-30 00:00:00" --end-time "2023-02-03 00:00:00"
+docker run --rm -it -v ~/.aws:/root/.aws:ro plazzari/cloudtrail-event-fuzzy-viewer:latest --start-time "2023-01-30 00:00:00" --end-time "2023-02-03 00:00:00" --region us-east-1
 ```
 
 - to scroll the event up and down, use shift+up or shift+down
