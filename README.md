@@ -30,7 +30,7 @@ docker run --rm -it -v ~/.aws:/root/.aws:ro plazzari/cloudtrail-event-fuzzy-view
 ## Installation
 
 ```bash
-$ curl -O https://raw.githubusercontent.com/paololazzari/cloudtrail-event-fuzzy-viewer/master/cloudtrail-event-fuzzy-viewer
-$ cp cloudtrail-event-fuzzy-viewer /usr/local/bin/cloudtrail-event-fuzzy-viewer
-$ chmod +x /usr/local/bin/cloudtrail-event-fuzzy-viewer
+curl -O https://raw.githubusercontent.com/paololazzari/cloudtrail-event-fuzzy-viewer/master/cloudtrail-event-fuzzy-viewer
+cp cloudtrail-event-fuzzy-viewer /usr/local/bin/cloudtrail-event-fuzzy-viewer
+chmod +x /usr/local/bin/cloudtrail-event-fuzzy-viewer
 ```
