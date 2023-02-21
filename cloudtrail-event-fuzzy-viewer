@@ -1,5 +1,5 @@
 #!/bin/bash
-VERSION="0.1.1"
+VERSION="0.1.2"
 
 print_version()
 {
@@ -117,9 +117,10 @@ if [ -z "$events" ] ; then
 fi
 
 readarray -t events < /tmp/_out
+touch /tmp/_event
 
-printf "%s\n" "${events[@]}" | fzf --bind "del:clear-query" --bind 'enter:ignore' \
+printf "%s\n" "${events[@]}" | fzf --bind "del:clear-query" --bind 'enter:execute[id=$(</tmp/_id); if grep -q "$id" /tmp/_event; then cat /tmp/_event; else aws cloudtrail lookup-events --lookup-attributes AttributeKey=EventId,AttributeValue="$id" --region "${AWS_REGION}" --query "Events[].CloudTrailEvent" --output text | jq -M "."; fi]+abort' \
   --with-nth 1..3 \
   --preview-window cycle \
   --preview-window="right:60%,border-rounded" \
-  --preview=$'l={}; id=$(echo "$l" | grep -Eo "[a-z0-9-]{28,}"); event=$(aws cloudtrail lookup-events --lookup-attributes AttributeKey=EventId,AttributeValue="$id" --region "${AWS_REGION}" --query "Events[].CloudTrailEvent" --output text | jq "."); echo "$event" '
+  --preview=$'l={}; id=$(echo "$l" | grep -Eo "[a-z0-9-]{28,}"); echo "$id" > /tmp/_id; event=$(aws cloudtrail lookup-events --lookup-attributes AttributeKey=EventId,AttributeValue="$id" --region "${AWS_REGION}" --query "Events[].CloudTrailEvent" --output text | jq "."); echo "$event" | tee /tmp/_event'
